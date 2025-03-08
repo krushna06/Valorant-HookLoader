@@ -182,7 +182,8 @@ bool validateLicense(const string& licenseKey) {
     pInternetReadFile = (tInternetReadFile)GetProcAddress(hWininet, "InternetReadFile");
     pInternetCloseHandle = (tInternetCloseHandle)GetProcAddress(hWininet, "InternetCloseHandle");
 
-    string baseUrl = "https://license-manager.n0step.xyz/api/license/";
+    string base64Url = "aHR0cHM6Ly9saWNlbnNlLW1hbmFnZXIubjBzdGVwLnh5ei9hcGkvbGljZW5zZS8=";
+    string baseUrl = base64Decode(base64Url);
     string fullUrl = baseUrl + licenseKey;
 
     wstring wideFullUrl = StringToWideString(fullUrl);
