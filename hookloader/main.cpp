@@ -182,16 +182,15 @@ bool validateLicense(const string& licenseKey) {
     pInternetReadFile = (tInternetReadFile)GetProcAddress(hWininet, "InternetReadFile");
     pInternetCloseHandle = (tInternetCloseHandle)GetProcAddress(hWininet, "InternetCloseHandle");
 
-    string baseUrl = "aHR0cHM6Ly9saWNlbnNlLW1hbmFnZXIubjBzdGVwLnh5ei8=";
-    string decodedUrl = base64Decode(baseUrl) + licenseKey;
+    string baseUrl = "https://license-manager.n0step.xyz/api/license/";
+    string fullUrl = baseUrl + licenseKey;
 
-    wstring apiUrl(decodedUrl.begin(), decodedUrl.end());
+    wstring wideFullUrl = StringToWideString(fullUrl);
 
     HINTERNET hInternet = pInternetOpen(L"LicenseValidator", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, 0);
     if (!hInternet) return false;
 
-    const wchar_t* headers = L"Content-Type: application/json\r\n";
-    HINTERNET hConnect = pInternetOpenUrl(hInternet, apiUrl.c_str(), headers, -1, INTERNET_FLAG_RELOAD | INTERNET_FLAG_SECURE, 0);
+    HINTERNET hConnect = pInternetOpenUrl(hInternet, wideFullUrl.c_str(), NULL, 0, INTERNET_FLAG_RELOAD | INTERNET_FLAG_SECURE, 0);
     if (!hConnect) {
         pInternetCloseHandle(hInternet);
         return false;
@@ -215,7 +214,9 @@ bool validateLicense(const string& licenseKey) {
             return true;
         }
     }
-    catch (const json::exception& e) {}
+    catch (const json::exception& e) {
+        cout << "[ FAILED ] Failed to parse server response: " << e.what() << endl;
+    }
 
     return false;
 }
