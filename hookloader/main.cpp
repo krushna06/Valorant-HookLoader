@@ -5,10 +5,32 @@
 #include "libs/json.hpp"
 #include <chrono>
 #include <thread>
+#include <vector>
 #pragma comment(lib, "wininet.lib")
 
 using namespace std;
 using json = nlohmann::json;
+
+string base64Decode(const string& encoded) {
+    static const string base64_chars =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+    string decoded;
+    vector<int> decode_table(256, -1);
+    for (int i = 0; i < 64; i++) decode_table[base64_chars[i]] = i;
+
+    int val = 0, valb = -8;
+    for (char c : encoded) {
+        if (decode_table[c] == -1) break;
+        val = (val << 6) + decode_table[c];
+        valb += 6;
+        if (valb >= 0) {
+            decoded.push_back(char((val >> valb) & 0xFF));
+            valb -= 8;
+        }
+    }
+    return decoded;
+}
 
 string decryptString(const string& encrypted) {
     string decrypted = encrypted;
@@ -45,10 +67,13 @@ bool validateLicense(const string& licenseKey) {
     pInternetReadFile = (tInternetReadFile)GetProcAddress(hWininet, "InternetReadFile");
     pInternetCloseHandle = (tInternetCloseHandle)GetProcAddress(hWininet, "InternetCloseHandle");
 
+    string baseUrl = "aHR0cHM6Ly8zMDAwLWtydXNobmEwNi1saWNlbnNlbWFuYWdlLXBmZXBybGI1eTFrLndzLXVzMTE4LmdpdHBvZC5pby9hcGkvbGljZW5zZS8=";
+    string decodedUrl = base64Decode(baseUrl) + licenseKey;
+
+    wstring apiUrl(decodedUrl.begin(), decodedUrl.end());
+
     HINTERNET hInternet = pInternetOpen(L"LicenseValidator", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, 0);
     if (!hInternet) return false;
-
-    wstring apiUrl = L"https://3000-krushna06-licensemanage-pfeprlb5y1k.ws-us118.gitpod.io/api/license/" + wstring(licenseKey.begin(), licenseKey.end());
 
     const wchar_t* headers = L"Content-Type: application/json\r\n";
     HINTERNET hConnect = pInternetOpenUrl(hInternet, apiUrl.c_str(), headers, -1, INTERNET_FLAG_RELOAD | INTERNET_FLAG_SECURE, 0);
@@ -89,6 +114,7 @@ int wmain(int argc, wchar_t* argv[], wchar_t* envp[]) {
 
     if (!validateLicense(licenseKey)) {
         cout << "[ FAILED ] Invalid or inactive license key." << endl;
+        cout << "[ >> ] If the issue persists, contact n0step_ on Discord." << endl;
         system("pause");
         return EXIT_FAILURE;
     }
@@ -96,6 +122,7 @@ int wmain(int argc, wchar_t* argv[], wchar_t* envp[]) {
     wchar_t* dllPath = argv[1];
     if (GetFileAttributes(dllPath) == INVALID_FILE_ATTRIBUTES) {
         cout << "[ FAILED ] DLL file does not exist." << endl;
+        cout << "[ >> ] If the issue persists, contact n0step_ on Discord." << endl;
         system("pause");
         return EXIT_FAILURE;
     }
@@ -103,6 +130,7 @@ int wmain(int argc, wchar_t* argv[], wchar_t* envp[]) {
     HWND hwnd = FindWindowW(L"VALORANTUnrealWindow", NULL);
     if (hwnd == NULL) {
         cout << "[ FAILED ] Could not find target window." << endl;
+        cout << "[ >> ] If the issue persists, contact n0step_ on Discord." << endl;
         system("pause");
         return EXIT_FAILURE;
     }
@@ -111,39 +139,7 @@ int wmain(int argc, wchar_t* argv[], wchar_t* envp[]) {
     DWORD tid = GetWindowThreadProcessId(hwnd, &pid);
     if (tid == NULL) {
         cout << "[ FAILED ] Could not get thread ID of the target window." << endl;
-        system("pause");
-        return EXIT_FAILURE;
-    }
-
-    HMODULE dll = LoadLibraryEx(dllPath, NULL, DONT_RESOLVE_DLL_REFERENCES);
-    if (dll == NULL) {
-        cout << "[ FAILED ] The DLL could not be found." << endl;
-        system("pause");
-        return EXIT_FAILURE;
-    }
-
-    HOOKPROC addr = (HOOKPROC)GetProcAddress(dll, "NextHook");
-    if (addr == NULL) {
-        cout << "[ FAILED ] The function was not found." << endl;
-        system("pause");
-        return EXIT_FAILURE;
-    }
-
-    HHOOK handle = SetWindowsHookEx(WH_GETMESSAGE, addr, dll, tid);
-    if (handle == NULL) {
-        cout << "[ FAILED ] Couldn't set the hook with SetWindowsHookEx." << endl;
-        system("pause");
-        return EXIT_FAILURE;
-    }
-
-    PostThreadMessage(tid, WM_NULL, NULL, NULL);
-
-    cout << "[ OK ] Hook set and triggered." << endl;
-    system("pause > nul");
-
-    BOOL unhook = UnhookWindowsHookEx(handle);
-    if (unhook == FALSE) {
-        cout << "[ FAILED ] Could not remove the hook." << endl;
+        cout << "[ >> ] If the issue persists, contact n0step_ on Discord." << endl;
         system("pause");
         return EXIT_FAILURE;
     }
