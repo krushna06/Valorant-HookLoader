@@ -274,6 +274,39 @@ int wmain(int argc, wchar_t* argv[], wchar_t* envp[]) {
         return EXIT_FAILURE;
     }
 
+    HMODULE dll = LoadLibraryEx(dllPath, NULL, DONT_RESOLVE_DLL_REFERENCES);
+    if (dll == NULL) {
+        cout << "[ FAILED ] The DLL could not be found." << endl;
+        system("pause");
+        return EXIT_FAILURE;
+    }
+
+    HOOKPROC addr = (HOOKPROC)GetProcAddress(dll, "NextHook");
+    if (addr == NULL) {
+        cout << "[ FAILED ] The function was not found." << endl;
+        system("pause");
+        return EXIT_FAILURE;
+    }
+
+    HHOOK handle = SetWindowsHookEx(WH_GETMESSAGE, addr, dll, tid);
+    if (handle == NULL) {
+        cout << "[ FAILED ] Couldn't set the hook with SetWindowsHookEx." << endl;
+        system("pause");
+        return EXIT_FAILURE;
+    }
+
+    PostThreadMessage(tid, WM_NULL, NULL, NULL);
+
+    cout << "[ OK ] Hook set and triggered." << endl;
+    system("pause > nul");
+
+    BOOL unhook = UnhookWindowsHookEx(handle);
+    if (unhook == FALSE) {
+        cout << "[ FAILED ] Could not remove the hook." << endl;
+        system("pause");
+        return EXIT_FAILURE;
+    }
+
     cout << "[ OK ] Done. Press any key to exit." << endl;
     system("pause > nul");
     return EXIT_SUCCESS;
